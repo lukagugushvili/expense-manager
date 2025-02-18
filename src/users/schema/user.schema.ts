@@ -8,7 +8,7 @@ export class User extends Document {
   userName: string;
 
   @Prop([{ type: Types.ObjectId, ref: 'Expense' }])
-  expense: Types.ObjectId[];
+  expenses: Types.ObjectId[];
 
   @Prop({ default: UserRoles.USER, enum: UserRoles })
   role: UserRoles;

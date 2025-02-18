@@ -18,7 +18,9 @@ export class CreateUserDto {
   @IsOptional()
   expenseId?: string;
 
-  @IsEnum({ UserRoles })
+  @IsEnum(UserRoles, {
+    message: 'Do not try to drive me crazy. you are not Admin',
+  })
   @IsOptional()
   role?: UserRoles;
 

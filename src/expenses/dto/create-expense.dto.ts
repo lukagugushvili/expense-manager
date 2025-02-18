@@ -15,5 +15,5 @@ export class CreateExpenseDto {
 
   @IsString()
   @IsMongoId()
-  userId: string;
+  user: string;
 }
