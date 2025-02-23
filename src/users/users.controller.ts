@@ -42,13 +42,12 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @Body('expenseId') expenseId: string,
   ): Promise<User> {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadGatewayException('Invalid mongo ID');
     }
 
-    return this.usersService.updateUser(id, updateUserDto, expenseId);
+    return this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')

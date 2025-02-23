@@ -5,12 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schema/user.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRoles } from 'src/enums/user-roles';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteUserRes } from './users-res-payloads/delete-user';
-import { ExpensesService } from 'src/expenses/expenses.service';
 
 @Injectable()
 export class UsersService {
@@ -65,18 +64,16 @@ export class UsersService {
   }
 
   // Update a users information
-  async updateUser(
-    id: string,
-    updateUserDto: UpdateUserDto,
-    expenseId: string,
-  ): Promise<User> {
+  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     try {
+      const user = await this.userModel.findById(id).exec();
+
+      if (updateUserDto.role === 'admin' && user?.role !== 'admin') {
+        throw new BadRequestException('You cannot change role to admin');
+      }
+
       const updateUser = await this.userModel
-        .findByIdAndUpdate(
-          id,
-          { ...updateUserDto, $pull: { expense: expenseId } },
-          { new: true },
-        )
+        .findByIdAndUpdate(id, updateUserDto, { new: true })
         .exec();
 
       if (!updateUser) {
@@ -109,22 +106,22 @@ export class UsersService {
   // Connect the expense to the user
   async addExpenseToUser(userId: string, expenseId: string): Promise<void> {
     try {
-      const user = await this.userModel
-        .findByIdAndUpdate(
-          userId,
-          { $push: { expense: expenseId } },
-          { new: true },
-        )
-        .exec();
+      const user = await this.userModel.findById(userId).exec();
 
-      if (!user) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
-      }
+      user?.expenses.push(new Types.ObjectId(expenseId));
+      await user?.save();
     } catch (error) {
       console.error(`Error adding expense to user: ${error.message}`);
       throw new BadRequestException(
         `Could not add expense to user: ${error.message}`,
       );
     }
+  }
+
+  async findFieldsForAuth(email: string): Promise<User | null> {
+    return this.userModel
+      .findOne({ email })
+      .select(['email', 'password', 'role'])
+      .exec();
   }
 }
