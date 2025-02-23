@@ -10,6 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UserRoles } from 'src/enums/user-roles';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteUserRes } from './users-res-payloads/delete-user';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -66,14 +67,31 @@ export class UsersService {
   // Update a users information
   async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     try {
+      const updateData: Partial<UpdateUserDto> = { ...updateUserDto };
+
       const user = await this.userModel.findById(id).exec();
 
       if (updateUserDto.role === 'admin' && user?.role !== 'admin') {
         throw new BadRequestException('You cannot change role to admin');
       }
 
+      if (updateUserDto?.password) {
+        const salt_rounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
+
+        if (isNaN(salt_rounds)) {
+          throw new BadRequestException(
+            'Invalid salt rounds. Please enter a number greater than 10',
+          );
+        }
+
+        updateData.password = await bcrypt.hash(
+          updateUserDto.password,
+          salt_rounds,
+        );
+      }
+
       const updateUser = await this.userModel
-        .findByIdAndUpdate(id, updateUserDto, { new: true })
+        .findByIdAndUpdate(id, updateData, { new: true })
         .exec();
 
       if (!updateUser) {
